@@ -1,0 +1,9 @@
+build/
+*.o
+*.so
+src/schwung_meta.h
+*.syx
+*.bin
+*.mid
+import/
+ROMS/
