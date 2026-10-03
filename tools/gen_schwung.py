@@ -17,7 +17,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")
-VERSION = "0.2.0"
+VERSION = "0.1.0"
 
 
 def load():
@@ -169,7 +169,7 @@ def main():
     print("params %d, chain_params %d bytes, ui_hierarchy %d bytes" % (len(metas), len(cp), len(uh)), file=sys.stderr)
     assert len(cp) < 60000 and len(uh) < 60000, "JSON too large for Schwung's 64 KB buffers"
     module = {"id": "clementine-xt", "name": "Clementine-XT", "abbrev": "CLXT", "version": VERSION,
-              "description": "Wavetable synth in the style of the Microwave II/XT", "dsp": "dsp.so", "api_version": 2,
+              "description": "Ten-voice wavetable synth: two wavetable oscillators, 13 filters, 16-slot mod matrix, arpeggiator and effects", "dsp": "dsp.so", "api_version": 2,
               "component_type": "sound_generator", "author": "sd88me",
               "capabilities": {"audio_out": True, "midi_in": True, "midi_out": False, "chainable": True, "component_type": "sound_generator"}}
     os.makedirs(os.path.join(ROOT, "src"), exist_ok=True)
