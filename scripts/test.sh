@@ -24,6 +24,12 @@ for m in cp:
 assert levels["root"]["list_param"] == "preset" and levels["banks"]["select_param"] == "bank"
 print("module.json: %d params, %d levels" % (len(keys), len(levels)))
 PY
+python3 tools/gen_web_ui.py
+python3 - <<'PY'
+h = open("web/web_ui.html").read()
+assert "/*PARAMS*/" not in h and "/*LAYOUT*/" not in h, "web_ui.html template not filled"
+assert "schwung-remote-api.js" in h and "setParam" in h and len(h) < 200000
+PY
 mkdir -p build /tmp/clxt_sim_data
 ENG="engine/engine.c engine/out.c engine/patch.c engine/syx.c engine/waves.c engine/wavedata.c engine/filter.c engine/fx.c engine/mod.c engine/presets.c"
 INC="-Iengine -Ivendor/schwung -Ivendor/mpc-vst-plugins -Isrc"

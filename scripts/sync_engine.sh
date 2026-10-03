@@ -10,5 +10,9 @@ done
 cp "$UP/vst/params.json" engine/params.json
 git -C "$UP" rev-parse HEAD > engine/UPSTREAM
 (cd engine && sha256sum $(ls | grep -v -e '^UPSTREAM$' -e '^SHA256SUMS$') > SHA256SUMS)   # the pin: scripts/check_engine.sh fails if engine/ drifts from it
+# the MPC skin (page layout, stylesheet, logo) is the design source of the web GUI (tools/gen_web_ui.py); same pin
+mkdir -p skin
+cp "$UP/vst/layout.conf" "$UP/vst/skin.css" "$UP/vst/images/logo-plate.svg" skin/
+(cd skin && sha256sum layout.conf skin.css logo-plate.svg > SHA256SUMS)
 python3 tools/gen_schwung.py
 echo "engine/ now matches $(cat engine/UPSTREAM | cut -c1-8) of $UP; run scripts/test.sh, then commit"

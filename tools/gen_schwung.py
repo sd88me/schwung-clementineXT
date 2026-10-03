@@ -138,6 +138,11 @@ def build():
         k2 = "play%d" % i
         metas.append(param_meta(k2, params[k2], "Play")); metas[-1]["name"] = LABELS[k2]
     # (controls on pages left off the hardware are still declared above, for the web GUI)
+    # readouts for the web GUI: on no hardware page. They are declared so the host forwards their values to the browser panel.
+    metas.append({"key": "preset", "name": "Sound", "type": "int", "min": 0, "max": 255, "default": 0})
+    metas.append({"key": "preset_name", "name": "Sound Name", "type": "string", "default": ""})
+    metas.append({"key": "bank", "name": "Bank", "type": "int", "min": 0, "max": 11, "default": 0})
+    metas.append({"key": "bank_name", "name": "Bank Name", "type": "string", "default": ""})
     levels["play_assign"] = {"name": "Play Assign", "params": [{"key": "play%d" % i, "name": LABELS["play%d" % i]} for i in range(1, 5)],
                              "knobs": ["play%d" % i for i in range(1, 5)]}
     root_items.insert(0, {"level": "play_assign", "name": "Play Assign"})
