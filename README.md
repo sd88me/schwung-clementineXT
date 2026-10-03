@@ -11,6 +11,7 @@ two ways to play it on a Move: a **playable subset on the Move's own knobs and s
 *Clementine-XT is an independent project. The XT in the name is a nod to the Microwave XT (and, like Surge XT, reads as "extended").
 It is not affiliated with or endorsed by Waldorf. See [Acknowledgements](#acknowledgements-and-legal).*
 
+<img width="222" height="290" alt="image" src="https://github.com/user-attachments/assets/83babac8-4e38-4cd0-a3b5-29e43a0d569a" />
 
 ## Your ROM and sound banks
 
@@ -139,9 +140,6 @@ because the module does not publish sound names; the current sound's name shows 
 - The Move's own screen shows the name of the selected sound only, and the browser panel's sound grid is numbered, because the module does not publish
   the names of all 256 sounds.
 - Controls left off the Move's pages (see the table) can be changed from the browser panel or from automation, not from the pages.
-- **Status:** it builds for aarch64, passes the engine's unit tests and a host simulation of the module under ASan, validates against Schwung's own
-  contract checker and installs on a Move. Load time, CPU and the knob pages on the hardware, saving a set, and whether the host forwards the readouts to
-  the browser panel are still being checked: [docs/MOVE_TEST.md](docs/MOVE_TEST.md) is the checklist.
 
 ## What you need
 
