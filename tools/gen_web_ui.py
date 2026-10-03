@@ -24,6 +24,9 @@ SKIN = os.path.join(ROOT, "skin")
 OUT = os.path.join(ROOT, "web")
 Y_OFFSET = 86          # the MPC layout's first panel starts at y=92 under its header; the browser page has no header
 STAGE_W, STAGE_H = 1280, 628 - 6
+# browser tabs: MPC tabs stacked vertically (the browser page scrolls), so five tabs instead of ten
+GROUPS = [("SOUND", ["GLOBAL", "SOUNDS"]), ("OSC + WAVE", ["OSC", "WAVE"]), ("FILTER + ENV", ["FILTER", "ENV"]),
+          ("LFO ARP + MODIFIERS", ["LFO ARP", "MODIFIERS"]), ("MOD MATRIX", ["MOD 1-8", "MOD 9-16"])]
 KEYMAP = {"program": "preset", "patch_name": "preset_name"}   # MPC key -> Schwung key
 
 
@@ -80,6 +83,10 @@ def main():
                 raise SystemExit("layout control %r is not a declared parameter" % w.get("key"))
             ws.append(w)
         layout.append({"name": t["name"], "w": ws})
+    by = {t["name"]: t for t in layout}
+    assert sorted(n for _, ns in GROUPS for n in ns) == sorted(by), "every MPC tab must be in exactly one group"
+    groups = [{"name": g, "sections": [by[n] for n in ns]} for g, ns in GROUPS]
+    layout = groups
     os.makedirs(os.path.join(OUT, "assets"), exist_ok=True)
     shutil.copy(os.path.join(SKIN, "logo-plate.svg"), os.path.join(OUT, "assets", "logo.svg"))
     tpl = open(os.path.join(HERE, "web_ui.template.html")).read()
@@ -88,7 +95,7 @@ def main():
     for k, v in theme.items():
         html = html.replace("var(--t-%s)" % k, "#" + v)
     open(os.path.join(OUT, "web_ui.html"), "w").write(html)
-    n = sum(len(t["w"]) for t in layout)
+    n = sum(len(sec["w"]) for g in layout for sec in g["sections"])
     print("web/web_ui.html: %d tabs, %d controls, %d bytes" % (len(layout), n, len(html)))
 
 

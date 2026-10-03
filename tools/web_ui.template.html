@@ -165,38 +165,40 @@ function frame(parent, w) {
 
 function art(parent, w) { var i = el("img", "", "position:absolute;left:" + px(w.x) + ";top:" + px(w.y) + ";width:" + px(w.w) + ";height:" + px(w.h), parent); i.src = "assets/logo.svg"; i.alt = ""; i.draggable = false; }
 
-/* the SOUNDS tab: the MPC page lists names; here a bank picker and a 1-256 grid (names are not published by the module) */
+/* the SOUNDS page (stacked under GLOBAL, whose SOUND section already has the steppers and name readouts): a bank picker and a 1-256 grid
+ * (the module does not publish sound names, so the grid is numbered) */
 function soundsTab(parent) {
-  stepper(parent, { cx: 120, cy: 52, w: 150, h: 48, label: "BANK", key: "bank" });
-  readout(parent, { cx: 400, cy: 52, w: 300, h: 50, key: "bank_name" });
-  stepper(parent, { cx: 700, cy: 52, w: 150, h: 48, label: "SOUND", key: "preset" });
-  readout(parent, { cx: 1020, cy: 52, w: 330, h: 50, key: "preset_name" });
-  frame(parent, { x: 10, y: 82, w: 250, h: 520, title: "BANKS" });
-  var bg = el("div", "grid", "left:28px;top:128px;width:214px;grid-template-columns:repeat(2,1fr);grid-auto-rows:44px", parent);
+  frame(parent, { x: 10, y: 6, w: 250, h: 604, title: "BANKS" });
+  var bg = el("div", "grid", "left:28px;top:52px;width:214px;grid-template-columns:repeat(2,1fr);grid-auto-rows:46px", parent);
   for (var b = 0; b < 12; b++) (function (b) { var c = el("div", "cell", "", bg); c.textContent = "BANK " + (b + 1); c.addEventListener("click", function () { setP("bank", b); }); watch("bank", function () { c.classList.toggle("on", Math.round(num("bank")) === b); }); })(b);
-  frame(parent, { x: 272, y: 82, w: 996, h: 520, title: "SOUNDS" });
-  var g = el("div", "grid", "left:290px;top:128px;width:960px;grid-template-columns:repeat(16,1fr);grid-auto-rows:26px;gap:3px", parent);
+  frame(parent, { x: 272, y: 6, w: 996, h: 604, title: "SOUNDS" });
+  var g = el("div", "grid", "left:290px;top:52px;width:960px;grid-template-columns:repeat(16,1fr);grid-auto-rows:31px;gap:3px", parent);
   for (var i = 0; i < 256; i++) (function (i) { var c = el("div", "cell", "", g); c.textContent = i + 1; c.addEventListener("click", function () { setP("preset", i); }); watch("preset", function () { c.classList.toggle("on", Math.round(num("preset")) === i); }); })(i);
 }
 
 /* ---- build ---- */
 var stage = document.getElementById("stage"), tabs = document.getElementById("tabs"), scale = 1;
 var BUILD = { frame: frame, knob: knob, popup: popup, toggle: toggle, readout: readout, stepper: stepper, art: art };
-var tabEls = [], btns = [];
-LAYOUT.forEach(function (t, i) {
-  var d = el("div", "tab", "", stage); tabEls.push(d);
-  if (t.name === "SOUNDS") soundsTab(d); else t.w.forEach(function (w) { var f = BUILD[w.k]; if (f) f(d, w); });
-  var b = el("button", "", "", tabs); b.textContent = t.name; b.addEventListener("click", function () { show(i); }); btns.push(b);
+var SEC_H = /*H*/616, tabEls = [], btns = [], cur = 0;
+LAYOUT.forEach(function (g, i) {
+  var d = el("div", "tab", "height:" + (SEC_H * g.sections.length) + "px", stage); tabEls.push(d);
+  g.sections.forEach(function (t, j) {   // the MPC pages of this tab, stacked
+    var sec = el("div", "", "position:absolute;left:0;width:" + /*W*/1280 + "px;height:" + SEC_H + "px;top:" + (j * SEC_H) + "px", d);
+    if (t.name === "SOUNDS") soundsTab(sec); else t.w.forEach(function (w) { var f = BUILD[w.k]; if (f && !(w.k === "art" && j > 0)) f(sec, w); });   // one logo per tab
+  });
+  var b = el("button", "", "", tabs); b.textContent = g.name; b.addEventListener("click", function () { show(i); window.scrollTo(0, 0); }); btns.push(b);
 });
 function show(i) {
+  cur = i;
   tabEls.forEach(function (d, j) { d.classList.toggle("on", i === j); btns[j].classList.toggle("on", i === j); });
   try { localStorage.setItem("clxt-tab", String(i)); } catch (e) {}
+  fit();
 }
 function fit() {
-  var wrap = document.getElementById("wrap"); scale = wrap.clientWidth / /*W*/1280;
-  stage.style.transform = "scale(" + scale + ")"; wrap.style.height = Math.round(/*H*/616 * scale) + "px";
+  var wrap = document.getElementById("wrap"), h = SEC_H * LAYOUT[cur].sections.length; scale = wrap.clientWidth / /*W*/1280;
+  stage.style.transform = "scale(" + scale + ")"; stage.style.height = h + "px"; wrap.style.height = Math.round(h * scale) + "px";
 }
-window.addEventListener("resize", fit); fit();
+window.addEventListener("resize", fit);
 var first = 0; try { first = Math.min(LAYOUT.length - 1, parseInt(localStorage.getItem("clxt-tab") || "0", 10) || 0); } catch (e) {}
 var q = location.search.match(/tab=(\d+)/); if (q) first = Math.min(LAYOUT.length - 1, +q[1]);
 show(first);

@@ -9,9 +9,9 @@ docker run --rm -i -v "$PWD":/w -w /w mpc-vst-html-art python3 - <<'PY'
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(viewport={"width": 1280, "height": 700})
-    for i in range(10):
+    for i in range(5):
         pg.goto("file:///w/web/web_ui.html?tab=%d" % i); pg.wait_for_timeout(300)
-        pg.screenshot(path="/w/build/web_preview/tab_%d.png" % i)
+        pg.screenshot(path="/w/build/web_preview/tab_%d.png" % i, full_page=True)
     b.close()
 PY
 ls build/web_preview
