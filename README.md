@@ -11,7 +11,7 @@ two ways to play it on a Move: a **playable subset on the Move's own knobs and s
 *Clementine-XT is an independent project. The XT in the name is a nod to the Microwave XT (and, like Surge XT, reads as "extended").
 It is not affiliated with or endorsed by Waldorf. See [Acknowledgements](#acknowledgements-and-legal).*
 
-<img width="222" height="290" alt="image" src="https://github.com/user-attachments/assets/83babac8-4e38-4cd0-a3b5-29e43a0d569a" />
+<img width="288" height="290" alt="image" src="https://github.com/user-attachments/assets/83babac8-4e38-4cd0-a3b5-29e43a0d569a" />
 
 ## Your ROM and sound banks
 
