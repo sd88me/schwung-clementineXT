@@ -8,6 +8,7 @@ for f in engine.c filter.c filter.h fx.c fx.h mod.c mod.h out.c out.h patch.c pa
     cp "$UP/src/$f" engine/
 done
 cp "$UP/vst/params.json" engine/params.json
-echo "$(git -C "$UP" rev-parse HEAD)" > engine/UPSTREAM
+git -C "$UP" rev-parse HEAD > engine/UPSTREAM
+(cd engine && sha256sum $(ls | grep -v -e '^UPSTREAM$' -e '^SHA256SUMS$') > SHA256SUMS)   # the pin: scripts/check_engine.sh fails if engine/ drifts from it
 python3 tools/gen_schwung.py
 echo "engine/ now matches $(cat engine/UPSTREAM | cut -c1-8) of $UP; run scripts/test.sh, then commit"

@@ -2,13 +2,15 @@
 # Host simulation of the Schwung module plus the engine's own unit tests, on x86 under ASan/UBSan. No Move needed.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+scripts/check_engine.sh
 python3 tools/gen_schwung.py
 python3 - <<'PY'
-import json
-d = json.load(open("module.json"))
-cp = d["capabilities"]["chain_params"]; keys = [m["key"] for m in cp]
+import json, os
+d = json.load(open("build/contract.json"))
+assert os.path.getsize("module.json") < 8192, "module.json over the loader's 8 KB cap"
+cp = d["chain_params"]; keys = [m["key"] for m in cp]
 assert len(keys) == len(set(keys)) <= 256, "duplicate or too many params"
-levels = d["capabilities"]["ui_hierarchy"]["levels"]
+levels = d["ui_hierarchy"]["levels"]
 for name, lv in levels.items():
     for p in lv.get("params", []):
         if "key" in p: assert p["key"] in keys, (name, p["key"])
@@ -17,7 +19,8 @@ txt = json.dumps(d)
 assert all(ord(c) < 128 for c in txt), "non-ASCII text (the device's 5x7 font cannot draw it)"
 for m in cp:
     if m["type"] == "enum": assert m["options"] and all(len(o) <= 31 for o in m["options"]), m["key"]
-    assert len(m["name"]) <= 15, m["key"]
+    assert len(m["name"]) <= 31 and len(m.get("short_name", "")) <= 15, m["key"]
+    if "short_options" in m: assert len(m["short_options"]) == len(m["options"]), m["key"]
 assert levels["root"]["list_param"] == "preset" and levels["banks"]["select_param"] == "bank"
 print("module.json: %d params, %d levels" % (len(keys), len(levels)))
 PY

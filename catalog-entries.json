@@ -1,0 +1,16 @@
+{
+  "_comment": "Add this object to the 'modules' array in Schwung's module-catalog.json (open a PR against charlesvestal/schwung) once a release exists and the module has run on a Move.",
+  "entries": [
+    {
+      "id": "clementine-xt",
+      "name": "Clementine-XT",
+      "description": "Ten-voice wavetable synth in the style of the Microwave II/XT: two wavetable oscillators, 13 filter types, 16-slot mod matrix, effects and arpeggiator. Bring your own ROM files.",
+      "author": "sd88me",
+      "component_type": "sound_generator",
+      "github_repo": "sd88me/schwung-clementineXT",
+      "default_branch": "main",
+      "asset_name": "clementine-xt-module.tar.gz",
+      "min_host_version": "1.6.3"
+    }
+  ]
+}

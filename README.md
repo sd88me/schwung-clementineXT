@@ -5,9 +5,9 @@ Waldorf Microwave II and Microwave XT did: two wavetable oscillators with FM, sy
 matrix with modifiers, an arpeggiator and a chain of effects, in ten voices at the original's 40 kHz internal rate. It loads the instrument's own
 `.syx` sound banks.
 
-**Status: first cut, not yet run on a Move.** The engine is the one from the MPC plugin
+**Status: not yet run on a Move.** The engine is the one from the MPC plugin
 ([sd88me/mpc-vst-clementineXT](https://github.com/sd88me/mpc-vst-clementineXT)), which runs on an Akai Force and is calibrated against the original
-firmware. What exists here has passed a host simulation under ASan and cross-builds for aarch64; load time, CPU and the knob pages still need a
+firmware. What exists here has passed a host simulation under ASan, cross-builds for aarch64 and is built against Schwung 1.6.3's header; load time, CPU and the knob pages still need a
 Move.
 
 *Clementine-XT is an independent project. The XT in the name is a nod to the Microwave XT (and, like Surge XT, reads as "extended"). It is not
@@ -36,30 +36,56 @@ Build the module (below) and install `build/clementine-xt-module.tar.gz` with Sc
 
 ## Build and test
 ```
-scripts/test.sh     # regenerates module.json, then the engine's unit tests and a host simulation of the module (x86, ASan)
+scripts/test.sh     # engine pin check, regenerates module.json, then the engine's unit tests and a host simulation of the module (x86, ASan)
 scripts/build.sh    # aarch64 module tarball in build/ (needs Docker)
+scripts/deploy.sh <move host> [--reboot]   # staged install on a Move (see docs/MOVE_TEST.md for the first-run checklist)
 ```
-`scripts/sync_engine.sh` refreshes `engine/` from a checkout of the MPC plugin repo, where the engine is developed.
+**The engine is developed in the MPC plugin repo, not here.** `scripts/sync_engine.sh` copies its `src/` into `engine/` and records the commit
+(`engine/UPSTREAM`) and the files' checksums (`engine/SHA256SUMS`); `scripts/check_engine.sh` (run by `test.sh`) fails if `engine/` was edited by hand
+or no longer matches the pinned commit, and warns when the MPC repo has engine changes newer than the pin.
 
 ## How it works
 Schwung runs every module entry point on the SPI audio callback, where file access, allocation and blocking are forbidden. The engine scans the ROMS
 folder, reads the ROM and builds its tables when it starts, and reads a `.syx` file when a bank is loaded. So `create_instance` only starts a worker thread
 (demoted to SCHED_OTHER on cores 0-2, as the API header requires); the worker creates the engine and publishes it, and until then the module renders
 silence. A bank change is queued to the same worker, and `destroy_instance` only sets a flag for the worker to free everything. The controls (202 of them)
-and the 37 pages are generated from `engine/params.json` by `tools/gen_schwung.py` into `module.json`.
+and the 37 pages are generated from `engine/params.json` by `tools/gen_schwung.py`. A sound generator's `chain_params` and `ui_hierarchy` are read from
+the plugin (`get_param`), not from `module.json`, so `module.json` stays a few hundred bytes (the loader caps it at 8 KB) and the two JSON documents
+are compiled into the plugin (`src/schwung_meta.h`).
 
 | Path | |
 |---|---|
 | `engine/` | the synth engine (a copy of the MPC repo's `src/`, see `engine/UPSTREAM`), and `params.json`, the control list it was generated from |
 | `src/schwung_plugin.c` | `plugin_api_v2` around the engine: loader thread, parameter and MIDI plumbing, the preset and bank pickers |
-| `module.json` | generated: `chain_params` and `ui_hierarchy` |
+| `module.json` | generated: id, version, capabilities (the pages and controls are served by the plugin) |
 | `vendor/` | Schwung's API header (MIT) and the engine interface; see `VENDORED.md` |
 | `test/` | the engine's unit tests and `host_sim.c` |
 
+## Pages
+The knob grid has eight knobs per page; the root page is the sound list (sounds 0-255 of the current bank).
+
+| Page | Knobs |
+|---|---|
+| **Root** (sound list) | Play 1-4, Cutoff, Reso, Volume, Prm 1 (effect parameter 1) |
+| Bank, Play Assign | the `.syx` bank picker; which parameter each Play knob drives |
+| Oscillator 1 / 2 | Octave, Semi, Detune, Bend, Keytrack, FM Amt, Table, Link / Octave, Semi, Detune, Bend, Keytrack, Sync |
+| Wave 1 / 2, Mixer, Quality | Start, Phase, Env Amt, Env Velo, Keytrack, Limit (+ Link) / Wave 1, Wave 2, Ring, Noise, Ext / Alias, Quantize, Clip, Acc |
+| Filter 1, Filter 2, Filter Envelope | Cutoff, Reso, Type, Keytrack, Env Amt, Env Velo, Spec / Cutoff, Type, Keytrack / A, D, S, R, Trigger |
+| Amplifier, Amp Envelope | Volume, Velo, Keytrack, Panning, PKey, Chorus / A, D, S, R, Trigger |
+| Wave Env Times, Levels, Loops, Free Envelope (+ trigger) | Time 1-8 / Level 1-8 / Trigger, loop on/off, start, end / Time and Level 1-3, release time and level |
+| LFO 1, LFO 2 | Rate, Shape, Delay, Sync, Symm, Human (+ Phase on LFO 2) |
+| Glide, Voices, Effect | Active, Type, Mode, Time / Mode, Assign, Detune, De-Pan / Type, Prm 1-3 |
+| Arpeggiator, Arp Reset | Active, Tempo, Clock, Range, Pattern, Dir, Order, Velo / Reset |
+| Mod Amount, Source, Dest 1-8 and 9-16 | the 16 matrix slots, eight per page (six pages) |
+| Modifier 1-4, Control Delay | Src 1, Src 2, Type, Param / Source, Time |
+
+Naming follows Schwung's rules (`docs/MODULES.md` upstream): `name` is the full name ("Osc 1 Octave", shown while a knob is held), `short_name`
+the cell label, `short_options` the enum square. Checked with Schwung's contract validator (info findings only: filter graphics are inferred).
+
 ## To do
-- Run it on a Move: load time, CPU (the Force runs 8 voices at about 15 % of a core), the knob pages, the bank picker.
-- Check the pages with Schwung's own validator (`tools/param-pages/validate.mjs`, needs Node) and preview tools.
-- Add the catalog files (`release.json`, a catalog entry) the way other Schwung modules do, then a first release.
+- Run it on a Move (checklist: [docs/MOVE_TEST.md](docs/MOVE_TEST.md)): load time, CPU (the Force runs 8 voices at about 15 % of a core), the knob pages,
+  the bank picker, saving a set.
+- A first release and a catalog entry (`catalog-entries.json` is ready, a PR against Schwung's `module-catalog.json`), after it has run on a Move.
 - Sound names show only for the selected sound; the engine's sound-state key is unused (Schwung keeps the control values).
 
 ## Acknowledgements and legal

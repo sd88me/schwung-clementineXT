@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Generate the Schwung (Ableton Move) module description from engine/params.json.
 
-    gen_schwung.py            writes module.json and src/schwung_meta.h
+    gen_schwung.py            writes module.json, src/schwung_meta.h and build/contract.json
 
-module.json carries the static `chain_params` (type, range, options of every control) and the `ui_hierarchy` (the pages the Move's
-knob grid walks, eight controls per page); schwung_meta.h embeds the same two JSON strings and the enum option tables so the plugin
-can answer `get_param("chain_params")`, `get_param("ui_hierarchy")` and turn an enum label into the index the engine takes.
-Limits (Schwung's chain host): 256 params, 128 options of 31 characters per enum, 64 KB of JSON each.
+module.json is small on purpose (the loader caps it at 8 KB, and a sound generator's chain_params / ui_hierarchy are read from the plugin,
+never from module.json). schwung_meta.h embeds the two JSON strings (`chain_params`: type, range, options of every control;
+`ui_hierarchy`: the pages the Move's knob grid walks, eight controls per page) and the enum option tables, so the plugin can answer
+`get_param("chain_params")`, `get_param("ui_hierarchy")` and turn an enum label into the index the engine takes. build/contract.json holds
+the same two for scripts/test.sh and for Schwung's tools/param-pages. Limits: 256 params, 128 options of 31 characters per enum, 64 KB each.
+Naming (docs/MODULES.md "Naming a parameter"): `name` is the full name shown in the held-knob header ("Osc 1 Octave"), `short_name` the cell
+label (the page already says which oscillator), `short_options` the 3-4 character enum square.
 """
 import json
 import os
@@ -14,7 +17,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 
 def load():
@@ -66,21 +69,45 @@ LABELS = {"play_v1": "Play 1", "play_v2": "Play 2", "play_v3": "Play 3", "play_v
           "play3": "Play 3 Param", "play4": "Play 4 Param"}
 
 
+FULLPRE = {"O1": "Osc 1", "O2": "Osc 2", "W1": "Wave 1", "W2": "Wave 2", "Mix": "Mix", "Q": "Quality", "F1": "Filter 1", "F2": "Filter 2",
+           "FE": "Filter Env", "Amp": "Amp", "AE": "Amp Env", "WT": "Wave Env", "WL": "Wave Env", "WE": "Wave Env", "FR": "Free Env",
+           "L1": "LFO 1", "L2": "LFO 2", "Gl": "Glide", "Vc": "Voice", "FX": "Effect", "CD": "Ctl Delay", "Root": ""}
+# enum squares are about 4 characters wide: the options worth shortening (the rest are cut by the renderer, and the long lists stay as they are)
+SHORT_OPT = {"saturate": "Sat", "overflow": "Ovfl", "linear": "Lin", "normal": "Norm", "single": "Sngl", "retrigger": "Retr", "unison": "Uni",
+             "random": "Rnd", "played": "Plyd", "root note": "Root", "last note": "Last", "24dB LP": "24LP", "12dB LP": "12LP", "24dB BP": "24BP",
+             "12dB BP": "12BP", "12dB HP": "12HP", "Sin(x)>LP": "SinL", "WaveShapr": "Shpr", "Dual L/BP": "Dual", "FM-Filter": "FM", "S&H>L12dB": "S&H",
+             "24dB Notch": "24N", "12dB Notch": "12N", "Band Stop": "Stop", "Ctl Filter": "CFlt", "Switch": "Sw"}
+
+
+# cell labels the renderer would squeeze into non-words (checked with labelForCell, see README "Checking the pages")
+SHORT = {"Wavetable": "Table", "Ringmod": "Ring", "External": "Ext", "Aliasing": "Alias", "Clipping": "Clip", "Accuracy": "Acc", "Special": "Spec",
+         "Pan Keyt": "PKey", "Pattern": "Patt", "Direction": "Dir", "Note Order": "Order", "Param 1": "Prm 1", "Param 2": "Prm 2", "Param 3": "Prm 3",
+         "Rel Time": "RelT", "Rel Level": "RelL", "Off Loop": "OffLp", "On Loop": "OnLp"}
+LABELS.update({"play1": "Play 1 Param", "play2": "Play 2 Param", "play3": "Play 3 Param", "play4": "Play 4 Param"})
+SHORT_KEY = {"play1": "Assign 1", "play2": "Assign 2", "play3": "Assign 3", "play4": "Assign 4"}
+
+
 def label(key, p, pre):
-    if key in LABELS: return LABELS[key]
+    """(full name for the held-knob header, short_name for the cell)."""
+    if key in SHORT_KEY: return LABELS[key], SHORT_KEY[key]
+    if key in LABELS: return LABELS[key], LABELS[key]
     name = p["name"]
-    s = ("%s %s" % (pre, name)).strip()
-    if key.startswith("m") and key[1:2].isdigit() and "_" in key:   # matrix slot: "Amt 3"
+    if key.startswith("m") and key[1:2].isdigit() and "_" in key:   # matrix slot: "Amt 3" in the cell, "Mod 3 Amount" in the header
         n = key[1:key.index("_")]
-        s = "%s %s" % (pre, n)
-    if key.startswith("mod") and key[3:4].isdigit(): s = "%s %s" % (pre, name)
-    return s[:15]
+        return "Mod %s %s" % (n, {"amt": "Amount", "src": "Source", "dst": "Dest"}[key.split("_")[1]]), "%s %s" % (pre, n)
+    if key.startswith("mod") and key[3:4].isdigit(): return ("Modifier %s %s" % (key[3], name))[:31], SHORT.get(name, name)
+    full = {"osc2_link": "Osc 2 Link", "wavetable": "Wavetable"}.get(key) or ("%s %s" % (FULLPRE.get(pre, pre), name)).strip()
+    return full[:31], SHORT.get(name, name)
 
 
 def param_meta(key, p, pre):
-    m = {"key": key, "name": label(key, p, pre)}
+    full, short = label(key, p, pre)
+    m = {"key": key, "name": full}
+    if short != full: m["short_name"] = short
     if "options" in p:
         m["type"] = "enum"; m["options"] = [o[:31] for o in p["options"]]; m["default"] = p.get("default", 0)
+        if len(p["options"]) <= 16 and any(o in SHORT_OPT for o in p["options"]):
+            m["short_options"] = [SHORT_OPT.get(o, o[:4]) for o in p["options"]]
     else:
         m["type"] = "int"; m["min"] = p["min"]; m["max"] = p["max"]; m["default"] = p.get("default", 0)
     return m
@@ -96,7 +123,7 @@ def build():
             if k in seen: continue
             seen.add(k); metas.append(param_meta(k, params[k], pre)); items.append(k)
         if not items: continue
-        levels[key] = {"name": name, "params": [{"key": k, "name": next(m["name"] for m in metas if m["key"] == k)} for k in items], "knobs": items[:8]}
+        levels[key] = {"name": name, "params": [{"key": k, "name": next(m.get("short_name", m["name"]) for m in metas if m["key"] == k)} for k in items], "knobs": items[:8]}
         root_items.append({"level": key, "name": name})
     # the four Play knobs and the parameter each controls (the sound's own choice of four), on the first page
     play = []
@@ -131,12 +158,13 @@ def main():
     print("params %d, chain_params %d bytes, ui_hierarchy %d bytes" % (len(metas), len(cp), len(uh)), file=sys.stderr)
     assert len(cp) < 60000 and len(uh) < 60000, "JSON too large for Schwung's 64 KB buffers"
     module = {"id": "clementine-xt", "name": "Clementine-XT", "abbrev": "CLXT", "version": VERSION,
-              "description": "Wavetable synth modelled on the Microwave II/XT", "dsp": "dsp.so", "api_version": 2,
+              "description": "Wavetable synth in the style of the Microwave II/XT", "dsp": "dsp.so", "api_version": 2,
               "component_type": "sound_generator", "author": "sd88me",
-              "capabilities": {"audio_out": True, "midi_in": True, "midi_out": False, "chainable": True, "component_type": "sound_generator",
-                               "ui_hierarchy": hier, "chain_params": metas}}
+              "capabilities": {"audio_out": True, "midi_in": True, "midi_out": False, "chainable": True, "component_type": "sound_generator"}}
     os.makedirs(os.path.join(ROOT, "src"), exist_ok=True)
+    os.makedirs(os.path.join(ROOT, "build"), exist_ok=True)
     json.dump(module, open(os.path.join(ROOT, "module.json"), "w"), indent=1)
+    json.dump({"chain_params": metas, "ui_hierarchy": hier}, open(os.path.join(ROOT, "build", "contract.json"), "w"))
     # C header: the two JSON strings (split into chunks), and the enum tables for label -> index
     def cstr(s):
         out = []

@@ -39,16 +39,21 @@ typedef struct {
 } wrap_t;
 
 static const host_api_v1_t *g_host;
+/* The engine builds its shared tables on first use (not thread-safe). Schwung may construct two instances at once (a chain bus worker and a slot),
+ * so every create goes through this lock; the tables are read-only once the first create has returned. */
+static pthread_mutex_t g_create_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void sleep_ms(int ms) { struct timespec ts = { 0, ms * 1000000L }; nanosleep(&ts, NULL); }
 
 static void *worker_main(void *arg) {
     wrap_t *w = arg;
-    struct sched_param sp = { .sched_priority = 0 };   /* threads inherit the callback's SCHED_FIFO 90: demote first and keep off core 3 */
+    struct sched_param sp = { .sched_priority = 0 };   /* threads inherit the callback's SCHED_FIFO 70: demote first and keep off core 3 */
     sched_setscheduler(0, SCHED_OTHER, &sp);
     cpu_set_t set; CPU_ZERO(&set); CPU_SET(0, &set); CPU_SET(1, &set); CPU_SET(2, &set);
     sched_setaffinity(0, sizeof set, &set);
+    pthread_mutex_lock(&g_create_lock);
     void *inst = w->eng->create(w->data_dir);
+    pthread_mutex_unlock(&g_create_lock);
     if (inst) { w->inst = inst; atomic_store(&w->state, 1); } else atomic_store(&w->state, 2);
     while (!atomic_load(&w->closing)) {
         unsigned t = atomic_load(&w->qtail);
