@@ -18,7 +18,7 @@ ssh "ableton@$HOST" "set -e
   tar -xzf /data/UserData/clementine-xt-module.tar.gz -C $DEST
   mkdir -p /data/UserData/schwung/clementine-xt/ROMS
   ls -l $DEST/clementine-xt
-  touch /data/UserData/schwung/debug_log_on"
+  touch /data/UserData/schwung/debug_log_on 2>/dev/null || echo \"(could not enable debug logging as ableton; try: ssh root@$HOST touch /data/UserData/schwung/debug_log_on)\""
 echo "Installed. Copy your ROM and .syx files to /data/UserData/schwung/clementine-xt/ROMS/ (optional)."
 if [ "$REBOOT" = "--reboot" ]; then ssh "root@$HOST" reboot || true; echo "Rebooting the Move."
 else echo "Reboot the Move (ssh root@$HOST reboot) so the new dsp.so is loaded, then add Clementine-XT to a track from the chain."; fi

@@ -49,7 +49,7 @@ Schwung runs every module entry point on the SPI audio callback, where file acce
 folder, reads the ROM and builds its tables when it starts, and reads a `.syx` file when a bank is loaded. So `create_instance` only starts a worker thread
 (demoted to SCHED_OTHER on cores 0-2, as the API header requires); the worker creates the engine and publishes it, and until then the module renders
 silence. A bank change is queued to the same worker, and `destroy_instance` only sets a flag for the worker to free everything. The controls (202 of them)
-and the 37 pages are generated from `engine/params.json` by `tools/gen_schwung.py`. A sound generator's `chain_params` and `ui_hierarchy` are read from
+and the pages are generated from `engine/params.json` by `tools/gen_schwung.py`. A sound generator's `chain_params` and `ui_hierarchy` are read from
 the plugin (`get_param`), not from `module.json`, so `module.json` stays a few hundred bytes (the loader caps it at 8 KB) and the two JSON documents
 are compiled into the plugin (`src/schwung_meta.h`).
 
@@ -62,22 +62,22 @@ are compiled into the plugin (`src/schwung_meta.h`).
 | `test/` | the engine's unit tests and `host_sim.c` |
 
 ## Pages
-The knob grid has eight knobs per page; the root page is the sound list (sounds 0-255 of the current bank).
+The knob grid has eight knobs per page; the root page is the sound list (sounds 0-255 of the current bank). The Move's hardware pages are a
+playable subset (`HW_PAGES` in `tools/gen_schwung.py`); all 202 controls stay declared in `chain_params`, and the web GUI has full control of them.
 
 | Page | Knobs |
 |---|---|
 | **Root** (sound list) | Play 1-4, Cutoff, Reso, Volume, Prm 1 (effect parameter 1) |
 | Bank, Play Assign | the `.syx` bank picker; which parameter each Play knob drives |
 | Oscillator 1 / 2 | Octave, Semi, Detune, Bend, Keytrack, FM Amt, Table, Link / Octave, Semi, Detune, Bend, Keytrack, Sync |
-| Wave 1 / 2, Mixer, Quality | Start, Phase, Env Amt, Env Velo, Keytrack, Limit (+ Link) / Wave 1, Wave 2, Ring, Noise, Ext / Alias, Quantize, Clip, Acc |
-| Filter 1, Filter 2, Filter Envelope | Cutoff, Reso, Type, Keytrack, Env Amt, Env Velo, Spec / Cutoff, Type, Keytrack / A, D, S, R, Trigger |
+| Wave 1 / 2, Mixer | Start, Phase, Env Amt, Env Velo, Keytrack, Limit (+ Link) / Wave 1, Wave 2, Ring, Noise, Ext |
+| Filter 1, Filter Envelope | Cutoff, Reso, Type, Keytrack, Env Amt, Env Velo, Spec / A, D, S, R, Trigger |
 | Amplifier, Amp Envelope | Volume, Velo, Keytrack, Panning, PKey, Chorus / A, D, S, R, Trigger |
-| Wave Env Times, Levels, Loops, Free Envelope (+ trigger) | Time 1-8 / Level 1-8 / Trigger, loop on/off, start, end / Time and Level 1-3, release time and level |
 | LFO 1, LFO 2 | Rate, Shape, Delay, Sync, Symm, Human (+ Phase on LFO 2) |
-| Glide, Voices, Effect | Active, Type, Mode, Time / Mode, Assign, Detune, De-Pan / Type, Prm 1-3 |
-| Arpeggiator, Arp Reset | Active, Tempo, Clock, Range, Pattern, Dir, Order, Velo / Reset |
-| Mod Amount, Source, Dest 1-8 and 9-16 | the 16 matrix slots, eight per page (six pages) |
-| Modifier 1-4, Control Delay | Src 1, Src 2, Type, Param / Source, Time |
+| Effect | Type, Prm 1-3 |
+
+Web GUI only: Filter 2, quality, the wave and free envelopes, glide and voices, the arpeggiator, the 16-slot modulation matrix, the modifiers and
+the control delay.
 
 Naming follows Schwung's rules (`docs/MODULES.md` upstream): `name` is the full name ("Osc 1 Octave", shown while a knob is held), `short_name`
 the cell label, `short_options` the enum square. Checked with Schwung's contract validator (info findings only: filter graphics are inferred).

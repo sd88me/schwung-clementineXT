@@ -64,6 +64,9 @@ def pages():
     return P
 
 
+# The Move's hardware pages are a playable subset; every control stays in chain_params so the web GUI (web_ui.html) has full control.
+HW_PAGES = ["osc1", "osc2", "wave1", "wave2", "mixer", "filter1", "amp", "fenv", "aenv", "lfo1", "lfo2", "fx"]
+
 PLAY_KNOBS = ["play_v1", "play_v2", "play_v3", "play_v4", "f1_cutoff", "f1_reso", "volume", "fx_p1"]
 LABELS = {"play_v1": "Play 1", "play_v2": "Play 2", "play_v3": "Play 3", "play_v4": "Play 4", "play1": "Play 1 Param", "play2": "Play 2 Param",
           "play3": "Play 3 Param", "play4": "Play 4 Param"}
@@ -123,6 +126,8 @@ def build():
             if k in seen: continue
             seen.add(k); metas.append(param_meta(k, params[k], pre)); items.append(k)
         if not items: continue
+        metas_only = key not in HW_PAGES
+        if metas_only: continue
         levels[key] = {"name": name, "params": [{"key": k, "name": next(m.get("short_name", m["name"]) for m in metas if m["key"] == k)} for k in items], "knobs": items[:8]}
         root_items.append({"level": key, "name": name})
     # the four Play knobs and the parameter each controls (the sound's own choice of four), on the first page
@@ -132,6 +137,7 @@ def build():
         metas.append({"key": k, "name": LABELS[k], "type": "int", "min": 0, "max": 127, "default": 0}); play.append(k)
         k2 = "play%d" % i
         metas.append(param_meta(k2, params[k2], "Play")); metas[-1]["name"] = LABELS[k2]
+    # (controls on pages left off the hardware are still declared above, for the web GUI)
     levels["play_assign"] = {"name": "Play Assign", "params": [{"key": "play%d" % i, "name": LABELS["play%d" % i]} for i in range(1, 5)],
                              "knobs": ["play%d" % i for i in range(1, 5)]}
     root_items.insert(0, {"level": "play_assign", "name": "Play Assign"})
