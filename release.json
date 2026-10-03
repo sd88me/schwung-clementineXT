@@ -1,0 +1,8 @@
+{
+  "modules": {
+    "clementine-xt": {
+      "version": "0.1.0",
+      "download_url": "https://github.com/sd88me/schwung-clementineXT/releases/download/v0.1.0/clementine-xt-module.tar.gz"
+    }
+  }
+}
