@@ -3,28 +3,14 @@
 A wavetable synthesizer for Ableton Move, as a [Schwung](https://github.com/charlesvestal/schwung) sound-generator module. It plays the way the
 Waldorf Microwave II and Microwave XT did: two wavetable oscillators with FM, sync and ring modulation, thirteen filter types, a 16-slot modulation
 matrix with modifiers, an arpeggiator and a chain of effects, in ten voices at the original's 40 kHz internal rate. It loads the instrument's own
-`.syx` sound banks.
+`.syx` sound banks and wavetables from factory ROM.
 
 It is the same engine as the [MPC plugin](https://github.com/sd88me/mpc-vst-clementineXT) (a native VST2 instrument for Akai MPC OS devices), with
-two ways to play it on a Move: a **playable subset on the Move's own knobs and screen**, and **full control of every parameter in a browser panel**
-that looks like the MPC plugin's screen.
+two ways to play it on a Move: a **playable subset on the Move's own knobs and screen**, and **full control of every parameter in a browser panel**.
 
 *Clementine-XT is an independent project. The XT in the name is a nod to the Microwave XT (and, like Surge XT, reads as "extended").
 It is not affiliated with or endorsed by Waldorf. See [Acknowledgements](#acknowledgements-and-legal).*
 
-## What you need
-
-- An Ableton Move running Schwung (the module is built against Schwung 1.6.3's plugin API).
-- **Optional but recommended: your own copy of the Microwave II ROM.** The module does not include one (see below). Without it you get 12 built-in
-  sounds on an original set of wave tables; with it you get the real waves and can load the instrument's factory banks.
-- To build it yourself: Docker (for the aarch64 cross build) and Python 3.
-
-## Install
-
-1. Download `clementine-xt-module.tar.gz` from the releases page, or build it (below).
-2. Install it with Schwung Manager (Custom Install from a file), or unpack it into `/data/UserData/schwung/modules/sound_generators/`
-   (`scripts/deploy.sh <move host>` does that over ssh, and reboots the Move with `--reboot`; the native DSP is only loaded at boot).
-3. Copy your ROM and banks as below, then add **Clementine-XT** as the synth of a track in the chain.
 
 ## Your ROM and sound banks
 
@@ -40,6 +26,53 @@ It sits outside the module folder, so module updates and reinstalls keep it.
   from the instrument.
 
 You must own the instrument or have the right to use its ROM. The project does not provide it and will not help find it.
+
+## How it is built, and how close it is to the original
+
+Clementine-XT is **not an emulation of the instrument's firmware or ROM**. It is a new engine in portable C (no 64-bit-only code, so it also runs on
+32-bit ARM devices) built around the Microwave XT's own data model, then tuned against the real firmware's output. This module and the MPC plugin
+share that engine, which is developed and calibrated in the MPC plugin's repository.
+
+**Design**
+
+- **The XT's sound format.** A sound is the XT's 256-byte parameter block (`.syx` single sounds and bank dumps load as they are), so every parameter has
+  the original's range, meaning and MIDI controller number.
+- **Waves as the instrument holds them.** A wave is 128 signed 8-bit samples, read through the instrument's mip levels and 64-slot wave tables, so the
+  stepped, slightly aliased character comes from the same data rather than from an imitation of it. The 506 original waves and the factory tables are read
+  at runtime from *your* ROM dump; without one, 12 open wave tables stand in.
+- **The original's rate.** Voices run at the XT's 40 kHz internal rate and are resampled to the host's rate, so aliasing falls where it did on the
+  hardware. Ten voices, as on the XT.
+- **Signal path in the XT's order.** Two wavetable oscillators (FM, sync, ring modulation, noise, external input) into the mixer, Filter 1 (13 types) and
+  Filter 2, amplifier, pan, then the effect and chorus; four envelopes (filter, amplifier, wave, free), two LFOs, the 16-slot matrix with four modifiers and
+  the control delay, glide, poly / mono / dual / unison allocation, and the arpeggiator.
+
+**How the accuracy was checked**
+
+The original firmware was run offline on a desktop computer, with its own ROM, as a reference rig. Test sounds were rendered through both it and this
+engine at 40 kHz and compared: pitch, spectrum, level, envelope timing and modulation. That rig is a development tool only; it is never shipped and none of
+its output is in either repository. What the measurements found (the MPC repository's `docs/CALIBRATION.md` has each one):
+
+- Oscillator pitch matches to 0.0 cents, and the harmonic content of a wave follows the original's.
+- Of the 248 comparable factory sounds, 183 are within 3 dB of the original's level and 221 within 6 dB (mean spectral band error 13 dB).
+- The modulation matrix and LFOs, mixer sources, wave and free envelopes, voice allocation, glide, the arpeggiator and the effects were each measured and
+  fitted. Filter 1 types 0-4, 7, 10 and 11 are fitted to the original's responses; 20 of the 24 computed wave tables reproduce it.
+
+So it is faithful in structure and close in sound, not identical. The remaining differences are listed under [Known limitations](#known-limitations).
+
+**Numbers**
+
+| | |
+|---|---|
+| Polyphony | 10 voices (mono, dual and unison modes use them) |
+| Internal rate | 40 kHz, resampled to the host rate; Move block size 128 |
+| Oscillators | 2 wavetable oscillators, 506 waves, 64-slot tables, 8-bit stepped waves, FM, sync, ring mod, noise, external input |
+| Filters | Filter 1: 13 types; Filter 2: 6 dB low or high pass |
+| Modulation | 16 matrix slots, 4 modifiers, 2 LFOs, 4 envelopes, control delay |
+| Effects | the XT's ten effect types plus chorus |
+| Controls | 202 parameters; 14 pages on the Move, all of them in the browser panel |
+| Module | `sound_generator`, plugin API v2, aarch64, GLIBC 2.34 or older |
+| Licence | GPL-3.0-only |
+
 
 ## Two ways to play it
 
@@ -95,69 +128,6 @@ because the module does not publish sound names; the current sound's name shows 
 **Saving.** The sound you are playing is part of the set (Schwung keeps the control values), so a set reloads as you left it. There is no separate
 "save preset" button in the module.
 
-## How it is built, and how close it is to the original
-
-Clementine-XT is **not an emulation of the instrument's firmware or ROM**. It is a new engine in portable C (no 64-bit-only code, so it also runs on
-32-bit ARM devices) built around the Microwave XT's own data model, then tuned against the real firmware's output. This module and the MPC plugin
-share that engine, which is developed and calibrated in the MPC plugin's repository.
-
-**Design**
-
-- **The XT's sound format.** A sound is the XT's 256-byte parameter block (`.syx` single sounds and bank dumps load as they are), so every parameter has
-  the original's range, meaning and MIDI controller number.
-- **Waves as the instrument holds them.** A wave is 128 signed 8-bit samples, read through the instrument's mip levels and 64-slot wave tables, so the
-  stepped, slightly aliased character comes from the same data rather than from an imitation of it. The 506 original waves and the factory tables are read
-  at runtime from *your* ROM dump; without one, 12 open wave tables stand in.
-- **The original's rate.** Voices run at the XT's 40 kHz internal rate and are resampled to the host's rate, so aliasing falls where it did on the
-  hardware. Ten voices, as on the XT.
-- **Signal path in the XT's order.** Two wavetable oscillators (FM, sync, ring modulation, noise, external input) into the mixer, Filter 1 (13 types) and
-  Filter 2, amplifier, pan, then the effect and chorus; four envelopes (filter, amplifier, wave, free), two LFOs, the 16-slot matrix with four modifiers and
-  the control delay, glide, poly / mono / dual / unison allocation, and the arpeggiator.
-- **Real-time friendly.** Slow-moving values are computed every 8 samples per voice, and every table is built when the instance is created, never on the
-  audio thread. The MPC repository's `docs/DESIGN.md` has the details.
-
-**How the accuracy was checked**
-
-The original firmware was run offline on a desktop computer, with its own ROM, as a reference rig. Test sounds were rendered through both it and this
-engine at 40 kHz and compared: pitch, spectrum, level, envelope timing and modulation. That rig is a development tool only; it is never shipped and none of
-its output is in either repository. What the measurements found (the MPC repository's `docs/CALIBRATION.md` has each one):
-
-- Oscillator pitch matches to 0.0 cents, and the harmonic content of a wave follows the original's.
-- Of the 248 comparable factory sounds, 183 are within 3 dB of the original's level and 221 within 6 dB (mean spectral band error 13 dB).
-- The modulation matrix and LFOs, mixer sources, wave and free envelopes, voice allocation, glide, the arpeggiator and the effects were each measured and
-  fitted. Filter 1 types 0-4, 7, 10 and 11 are fitted to the original's responses; 20 of the 24 computed wave tables reproduce it.
-
-So it is faithful in structure and close in sound, not identical. The remaining differences are listed under [Known limitations](#known-limitations).
-
-**Numbers**
-
-| | |
-|---|---|
-| Polyphony | 10 voices (mono, dual and unison modes use them) |
-| Internal rate | 40 kHz, resampled to the host rate; Move block size 128 |
-| Oscillators | 2 wavetable oscillators, 506 waves, 64-slot tables, 8-bit stepped waves, FM, sync, ring mod, noise, external input |
-| Filters | Filter 1: 13 types; Filter 2: 6 dB low or high pass |
-| Modulation | 16 matrix slots, 4 modifiers, 2 LFOs, 4 envelopes, control delay |
-| Effects | the XT's ten effect types plus chorus |
-| Controls | 202 parameters; 14 pages on the Move, all of them in the browser panel |
-| Module | `sound_generator`, plugin API v2, aarch64, GLIBC 2.34 or older |
-| Licence | GPL-3.0-only |
-
-## How it fits Schwung
-
-Schwung runs every module entry point on the SPI audio callback, where file access, allocation and blocking are forbidden. The engine scans the ROMS
-folder, reads the ROM and builds its tables when it starts, and reads a `.syx` file when a bank is loaded. So `create_instance` only starts a worker
-thread (demoted to SCHED_OTHER on cores 0-2, as the API header requires); the worker creates the engine and publishes it, and until then the module
-renders silence and the sound name reads "(loading)". A bank change is queued to the same worker, and `destroy_instance` only sets a flag for the worker
-to free everything. Instance creation is serialised with a lock, because Schwung may construct two instances at once (a bus insert and a slot) and the
-engine builds shared tables on first use.
-
-A sound generator's `chain_params` (every control's type, range and options) and `ui_hierarchy` (the Move's pages) are read from the module, not from
-`module.json`, so `module.json` stays a few hundred bytes (the loader caps it at 8 KB). Both are generated from `engine/params.json` by
-`tools/gen_schwung.py` and compiled into the module. The hierarchy lists only the 14 playable pages, while `chain_params` declares all of the controls,
-which is what lets the browser panel reach them. Names follow Schwung's rules: `name` is the full name shown while a knob is held ("Osc 1 Octave"),
-`short_name` the five-character cell label, `short_options` the enum square.
-
 ## Known limitations
 
 - Four of the 24 computed wave tables (43, 46, 50 and 51) and the user tables are stand-ins, and some of the filter types (waveshaper, FM, S&H, band
@@ -173,6 +143,19 @@ which is what lets the browser panel reach them. Names follow Schwung's rules: `
   contract checker and installs on a Move. Load time, CPU and the knob pages on the hardware, saving a set, and whether the host forwards the readouts to
   the browser panel are still being checked: [docs/MOVE_TEST.md](docs/MOVE_TEST.md) is the checklist.
 
+## What you need
+
+- An Ableton Move running Schwung (the module is built against Schwung 1.6.3's plugin API).
+- **Optional but recommended: your own copy of the Microwave II ROM.** The module does not include one (see below). Without it you get 12 built-in
+  sounds on an original set of wave tables; with it you get the real waves and can load the instrument's factory banks.
+
+## Install
+
+1. Download `clementine-xt-module.tar.gz` from the releases page, or build it (below).
+2. Install it with Schwung Manager (Custom Install from a file), or unpack it into `/data/UserData/schwung/modules/sound_generators/`
+   (`scripts/deploy.sh <move host>` does that over ssh, and reboots the Move with `--reboot`; the native DSP is only loaded at boot).
+3. Copy your ROM and banks as below, then add **Clementine-XT** as the synth of a track in the chain.
+  
 ## Troubleshooting
 
 - **The module is not in the list of synths:** reboot the Move (the native DSP loads at boot), and look for `dlopen failed` in
