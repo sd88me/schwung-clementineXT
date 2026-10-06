@@ -2,7 +2,7 @@
  "id": "clementine-xt",
  "name": "Clementine-XT",
  "abbrev": "CLXT",
- "version": "0.1.0",
+ "version": "0.1.1",
  "description": "Ten-voice wavetable synth: two wavetable oscillators, 13 filters, 16-slot mod matrix, arpeggiator and effects",
  "dsp": "dsp.so",
  "api_version": 2,

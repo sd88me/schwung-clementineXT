@@ -17,7 +17,7 @@ rm -rf build/modules build/clementine-xt-module.tar.gz
 mkdir -p "$OUT"
 cp module.json "$OUT/"
 cp web/web_ui.html "$OUT/"; mkdir -p "$OUT/assets"; cp web/assets/* "$OUT/assets/"   # the browser panel (Remote UI)
-SRC="engine/engine.c engine/out.c engine/patch.c engine/syx.c engine/waves.c engine/wavedata.c engine/filter.c engine/fx.c engine/mod.c engine/presets.c src/schwung_plugin.c"
+SRC="engine/engine.c engine/out.c engine/patch.c engine/syx.c engine/waves.c engine/wavedata.c engine/filter.c engine/fx.c engine/mod.c engine/presets.c engine/factory.c src/schwung_plugin.c"
 CFLAGS="-O2 -g -shared -fPIC -Wall -Wno-format-truncation -Iengine -Ivendor/schwung -Ivendor/mpc-vst-plugins -Isrc"
 docker run --rm -v "$PWD":/w -w /w "$IMAGE" bash -c "
     set -e

@@ -31,7 +31,7 @@ assert "/*PARAMS*/" not in h and "/*LAYOUT*/" not in h, "web_ui.html template no
 assert "schwung-remote-api.js" in h and "setParam" in h and len(h) < 200000
 PY
 mkdir -p build /tmp/clxt_sim_data
-ENG="engine/engine.c engine/out.c engine/patch.c engine/syx.c engine/waves.c engine/wavedata.c engine/filter.c engine/fx.c engine/mod.c engine/presets.c"
+ENG="engine/engine.c engine/out.c engine/patch.c engine/syx.c engine/waves.c engine/wavedata.c engine/filter.c engine/fx.c engine/mod.c engine/presets.c engine/factory.c"
 INC="-Iengine -Ivendor/schwung -Ivendor/mpc-vst-plugins -Isrc"
 FLAGS="-O1 -g -Wall -Wno-format-truncation -fsanitize=address,undefined"
 for t in test_arp test_presets test_play test_patch test_waves test_out; do

@@ -21,6 +21,8 @@ It sits outside the module folder, so module updates and reinstalls keep it.
 - **Waves and wave tables:** copy your Microwave II ROM dump there, either the two 128 KB chip images (for example `lower_Am29F010.bin` and
   `upper_Am29F010.bin`; any `.bin` names work) or one 256 KB image. Add a fresh instance of the module (remove it from the track and add it again) and
   the 506 original waves and the factory wave tables load. Tables 28-51 are computed by the module itself, so they work whatever the chips hold.
+- **Factory sounds:** nothing more to add. With the ROM in place the module also decodes the 256 factory sounds from it and offers them as
+  the bank "XT Factory" (the first bank).
 - **Sound banks:** copy any Microwave II/XT `.syx` file (a single sound or a whole bank dump) there. Each file appears as a bank on the Bank page
   (and in the browser panel), named after the file (`Factory.syx` is the bank "Factory").
 - **No ROM:** the built-in bank (12 sounds) plays on an original open set of wave tables. Sounds that use the original tables will sound different

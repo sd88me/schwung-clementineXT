@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 UP="${1:-../mpc-vst-clementine}"
-for f in engine.c filter.c filter.h fx.c fx.h mod.c mod.h out.c out.h patch.c patch.h patch_tab.h presets.c presets.h syx.c syx.h wavedata.c wavedata.h waves.c waves.h; do
+for f in engine.c factory.c factory.h filter.c filter.h fx.c fx.h mod.c mod.h out.c out.h patch.c patch.h patch_tab.h presets.c presets.h syx.c syx.h wavedata.c wavedata.h waves.c waves.h; do
     cp "$UP/src/$f" engine/
 done
 cp "$UP/vst/params.json" engine/params.json
