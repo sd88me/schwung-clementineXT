@@ -1,0 +1,125 @@
+{
+ "title": "Clementine-XT",
+ "children": [
+  {
+   "title": "Overview",
+   "lines": [
+    "Wavetable synth in",
+    "the style of the",
+    "Microwave II / XT.",
+    "",
+    "10 voices, 2 wave-",
+    "table oscillators,",
+    "13 filters, 16-slot",
+    "mod matrix, effects",
+    "and an arpeggiator."
+   ]
+  },
+  {
+   "title": "Playing",
+   "lines": [
+    "Root page: jog picks",
+    "a sound, click opens",
+    "the pages.",
+    "",
+    "Knobs 1-8: Play 1-4,",
+    "Cutoff, Reso,",
+    "Volume, Prm 1.",
+    "",
+    "Play Assign page",
+    "sets what Play 1-4",
+    "turn."
+   ]
+  },
+  {
+   "title": "Pages",
+   "children": [
+    {
+     "title": "Bank / Play Assign",
+     "lines": [
+      "Bank: pick a bank",
+      "of 256 sounds.",
+      "Play Assign: choose",
+      "the parameter under",
+      "each Play knob."
+     ]
+    },
+    {
+     "title": "Osc / Wave / Mixer",
+     "lines": [
+      "Osc 1, Osc 2:",
+      "octave, semi, detune,",
+      "bend, keytrack, FM,",
+      "table, sync.",
+      "Wave 1, 2: start,",
+      "phase, env, limit.",
+      "Mixer: levels, ring,",
+      "noise."
+     ]
+    },
+    {
+     "title": "Filter / Amp",
+     "lines": [
+      "Filter 1 and its",
+      "envelope.",
+      "Amplifier: volume,",
+      "velo, pan, chorus,",
+      "and its envelope."
+     ]
+    },
+    {
+     "title": "LFO / Effect",
+     "lines": [
+      "LFO 1 and 2: rate,",
+      "shape, delay, sync.",
+      "Effect: type and",
+      "three parameters."
+     ]
+    }
+   ]
+  },
+  {
+   "title": "ROM and banks",
+   "lines": [
+    "Files go in:",
+    "/data/UserData/",
+    "schwung/clementine-",
+    "xt/ROMS/",
+    "",
+    "Your own ROM gives",
+    "the original waves",
+    "and the bank",
+    "XT Factory.",
+    "",
+    "Add .syx files as",
+    "extra banks.",
+    "",
+    "Add a fresh instance",
+    "after copying files."
+   ]
+  },
+  {
+   "title": "Full control",
+   "lines": [
+    "Every parameter is",
+    "in the browser panel:",
+    "http://<move>:7700/",
+    "remote-ui",
+    "",
+    "Open the Clementine-",
+    "XT slot there."
+   ]
+  },
+  {
+   "title": "No ROM?",
+   "lines": [
+    "A built-in bank of",
+    "12 sounds plays on an",
+    "open set of wave-",
+    "tables. Sounds that",
+    "use original tables",
+    "sound different."
+   ]
+  }
+ ]
+}
