@@ -9,8 +9,9 @@
       "component_type": "sound_generator",
       "subcategory": "wavetable",
       "tags": [
-        "wavetable",
-        "polyphonic"
+        "polyphonic",
+        "needs-assets",
+        "has-remote-ui"
       ],
       "github_repo": "sd88me/schwung-clementineXT",
       "default_branch": "main",
