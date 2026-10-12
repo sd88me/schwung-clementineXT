@@ -6,7 +6,8 @@
  *   - create_instance only allocates the small wrapper and starts a worker thread (demoted to SCHED_OTHER on cores 0-2, as the contract demands);
  *   - the worker creates the engine and publishes it; until then render_block writes silence and MIDI and parameters are dropped;
  *   - slow parameter writes (the bank) go through a small lock-free queue to the worker; while one runs, program and bank writes are ignored;
- *   - destroy_instance asks the worker to tear everything down (the worker polls a flag every few milliseconds) and returns at once.
+ *   - destroy_instance asks the worker to tear everything down (the worker polls a flag every few milliseconds) and returns at once;
+ *     the library's destructor waits for the workers so dlclose never unmaps code a worker is still running.
  * Everything the audio thread calls on the engine (midi, render, set_param of an ordinary parameter, get_param) is the same code the MPC build runs
  * in its audio callback, which avoids allocation and file access by design (docs/PERFORMANCE.md). */
 #define _GNU_SOURCE
@@ -45,6 +46,13 @@ static pthread_mutex_t g_create_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void sleep_ms(int ms) { struct timespec ts = { 0, ms * 1000000L }; nanosleep(&ts, NULL); }
 
+/* Workers still running code from this library. Schwung dlcloses the module right after the last instance is destroyed (swap or remove a slot);
+ * a worker still creating the engine, or tearing it down, would then run unmapped code and take the whole host down. */
+static atomic_int g_workers;
+__attribute__((destructor)) static void wait_for_workers(void) {
+    for (int i = 0; i < 5000 && atomic_load(&g_workers) > 0; i++) sleep_ms(2);   /* at most 10 s */
+}
+
 static void *worker_main(void *arg) {
     wrap_t *w = arg;
     struct sched_param sp = { .sched_priority = 0 };   /* threads inherit the callback's SCHED_FIFO 70: demote first and keep off core 3 */
@@ -67,6 +75,7 @@ static void *worker_main(void *arg) {
     }
     if (inst) w->eng->destroy(inst);
     free(w);
+    atomic_fetch_sub(&g_workers, 1);   /* last access to anything in this library */
     return NULL;
 }
 
@@ -77,7 +86,8 @@ static void *sw_create(const char *module_dir, const char *json_defaults) {
     w->eng = mpc_engine();
     const char *d = getenv("CLEMENTINE_XT_DATA");   /* the user's ROMs and banks live outside the module folder so module updates keep them */
     snprintf(w->data_dir, sizeof w->data_dir, "%s", d && *d ? d : "/data/UserData/schwung/clementine-xt");
-    if (pthread_create(&w->worker, NULL, worker_main, w)) { free(w); return NULL; }
+    atomic_fetch_add(&g_workers, 1);
+    if (pthread_create(&w->worker, NULL, worker_main, w)) { atomic_fetch_sub(&g_workers, 1); free(w); return NULL; }
     pthread_detach(w->worker);
     return w;
 }
